@@ -1,0 +1,2159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DDS Product Quiz Game</title>
+    <!-- Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 900px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            position: relative;
+        }
+
+        .mute-btn {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: #667eea;
+            color: white;
+            border: none;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.5em;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .mute-btn:hover {
+            background: #764ba2;
+            transform: scale(1.1);
+        }
+
+        .mute-btn.muted {
+            background: #999;
+        }
+
+        .header h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .tab-btn {
+            padding: 12px 24px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 500;
+            color: #999;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .tab-btn:hover {
+            color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Setup Screen */
+        .setup-screen {
+            text-align: center;
+        }
+
+        .setup-group {
+            margin: 30px 0;
+            text-align: left;
+        }
+
+        .setup-group label {
+            display: block;
+            margin-bottom: 10px;
+            color: #333;
+            font-weight: 600;
+            font-size: 1.1em;
+        }
+
+        .setup-group input,
+        .setup-group select {
+            width: 100%;
+            max-width: 400px;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s ease;
+        }
+
+        .setup-group input:focus,
+        .setup-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .difficulty-options {
+            display: flex;
+            gap: 15px;
+            max-width: 400px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .difficulty-option {
+            flex: 1;
+            min-width: 100px;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .difficulty-option:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .difficulty-option.selected {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .btn-start {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 30px;
+            transition: transform 0.2s ease;
+        }
+
+        .btn-start:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-start:active {
+            transform: translateY(0);
+        }
+
+        /* Quiz Screen */
+        .quiz-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .progress-info {
+            color: #667eea;
+            font-weight: 600;
+            font-size: 1.1em;
+        }
+
+        .score-display {
+            color: #764ba2;
+            font-weight: 600;
+            font-size: 1.1em;
+        }
+
+        .question-container {
+            margin-bottom: 30px;
+        }
+
+        .question-text {
+            font-size: 1.3em;
+            color: #333;
+            margin-bottom: 25px;
+            font-weight: 500;
+        }
+
+        .answer-options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .answer-option {
+            padding: 15px 20px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+            background: white;
+            transition: all 0.3s ease;
+            font-size: 1em;
+            text-align: left;
+        }
+
+        .answer-option:hover:not(.disabled) {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .answer-option.selected {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .answer-option.correct {
+            background: #4caf50;
+            color: white;
+            border-color: #4caf50;
+        }
+
+        .answer-option.incorrect {
+            background: #f44336;
+            color: white;
+            border-color: #f44336;
+        }
+
+        .answer-option.disabled {
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .feedback {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: 500;
+            display: none;
+        }
+
+        .feedback.show {
+            display: block;
+        }
+
+        .feedback.correct {
+            background: #e8f5e9;
+            color: #2e7d32;
+            border-left: 4px solid #4caf50;
+        }
+
+        .feedback.incorrect {
+            background: #ffebee;
+            color: #c62828;
+            border-left: 4px solid #f44336;
+        }
+
+        .btn-next {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 20px;
+            margin-right: 10px;
+            display: none;
+            transition: all 0.3s ease;
+        }
+
+        .btn-next.show {
+            display: inline-block;
+        }
+
+        .btn-next:hover {
+            background: #764ba2;
+        }
+
+        .btn-back {
+            background: #999;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 20px;
+            margin-right: 10px;
+            display: none;
+            transition: all 0.3s ease;
+        }
+
+        .btn-back.show {
+            display: inline-block;
+        }
+
+        .btn-back:hover {
+            background: #666;
+        }
+
+        /* Results Screen */
+        .results-container {
+            text-align: center;
+        }
+
+        .score-badge {
+            width: 150px;
+            height: 150px;
+            margin: 30px auto;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 3em;
+            font-weight: bold;
+            color: white;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .score-badge.excellent {
+            background: linear-gradient(135deg, #4caf50, #45a049);
+        }
+
+        .score-badge.good {
+            background: linear-gradient(135deg, #2196f3, #1976d2);
+        }
+
+        .score-badge.fair {
+            background: linear-gradient(135deg, #ff9800, #f57c00);
+        }
+
+        .score-badge.poor {
+            background: linear-gradient(135deg, #f44336, #d32f2f);
+        }
+
+        .rating-text {
+            font-size: 2em;
+            font-weight: bold;
+            margin: 20px 0;
+            color: #333;
+        }
+
+        .rating-description {
+            color: #666;
+            font-size: 1.1em;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        .stats {
+            background: #f5f5f5;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 30px 0;
+            text-align: left;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .stat-row:last-child {
+            border-bottom: none;
+        }
+
+        .stat-label {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .stat-value {
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .btn-group {
+            margin-top: 30px;
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn-retry {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-retry:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+        }
+
+        .btn-leaderboard {
+            background: #764ba2;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-leaderboard:hover {
+            background: #667eea;
+            transform: translateY(-2px);
+        }
+
+        /* Leaderboard */
+        .leaderboard-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .leaderboard-table th {
+            background: #667eea;
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .leaderboard-table td {
+            padding: 15px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .leaderboard-table tbody tr:hover {
+            background: #f5f5f5;
+        }
+
+        .rank {
+            font-weight: 600;
+            color: #667eea;
+            font-size: 1.2em;
+        }
+
+        .rank.gold {
+            color: #ffc107;
+        }
+
+        .rank.silver {
+            color: #c0c0c0;
+        }
+
+        .rank.bronze {
+            color: #cd7f32;
+        }
+
+        .medal {
+            font-size: 1.5em;
+            margin-right: 10px;
+        }
+
+        .rating-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+
+        .rating-badge.expert {
+            background: #4caf50;
+            color: white;
+        }
+
+        .rating-badge.advanced {
+            background: #2196f3;
+            color: white;
+        }
+
+        .rating-badge.intermediate {
+            background: #ff9800;
+            color: white;
+        }
+
+        .rating-badge.beginner {
+            background: #f44336;
+            color: white;
+        }
+
+        .empty-leaderboard {
+            text-align: center;
+            color: #999;
+            padding: 40px 20px;
+        }
+
+        .btn-clear {
+            background: #999;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        .btn-clear:hover {
+            background: #666;
+        }
+
+        input[type="text"] {
+            border: 2px solid #ddd;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 1em;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .error-message {
+            color: #f44336;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .question-text {
+                font-size: 1.1em;
+            }
+
+            .score-badge {
+                width: 120px;
+                height: 120px;
+                font-size: 2.5em;
+            }
+
+            .rating-text {
+                font-size: 1.5em;
+            }
+
+            .tabs {
+                flex-wrap: wrap;
+            }
+
+            .tab-btn {
+                flex: 1;
+                min-width: 100px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <button class="mute-btn" id="muteBtn" onclick="toggleMute()" title="Toggle music">🔊</button>
+            <h1>🎮 DDS Quiz Challenge</h1>
+            <p>Test Your Knowledge of Direct Data Solutions</p>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('game')">Quiz</button>
+            <button class="tab-btn" onclick="switchTab('leaderboard')">Leaderboard</button>
+            <button class="tab-btn" onclick="switchTab('help')">Help</button>
+        </div>
+
+        <!-- QUIZ TAB -->
+        <div id="game" class="tab-content active">
+            <!-- Setup Screen -->
+            <div id="setupScreen" class="setup-screen">
+                <h2 style="color: #333; margin-bottom: 30px;">Game Configuration</h2>
+
+                <div class="setup-group">
+                    <label for="playerName">👤 Player Name:</label>
+                    <input type="text" id="playerName" placeholder="Enter your name" maxlength="50">
+                    <div class="error-message" id="nameError" style="display: none;">Please enter a valid name</div>
+                </div>
+
+                <div class="setup-group">
+                    <label>❓ Number of Questions:</label>
+                    <div style="max-width: 400px;">
+                        <input type="range" id="questionCount" min="5" max="50" value="10" style="width: 100%; cursor: pointer;">
+                        <div style="text-align: center; margin-top: 10px; color: #667eea; font-weight: bold; font-size: 1.2em;">
+                            <span id="questionCountDisplay">10</span> questions
+                        </div>
+                    </div>
+                </div>
+
+                <div class="setup-group">
+                    <label>⚡ Difficulty Threshold:</label>
+                    <div class="difficulty-options">
+                        <div class="difficulty-option selected" onclick="selectDifficulty(this, 'easy')">🟢 Easy</div>
+                        <div class="difficulty-option" onclick="selectDifficulty(this, 'medium')">🟡 Medium</div>
+                        <div class="difficulty-option" onclick="selectDifficulty(this, 'hard')">🔴 Hard</div>
+                        <div class="difficulty-option" onclick="selectDifficulty(this, 'mixed')">🎲 Mixed</div>
+                    </div>
+                </div>
+
+                <div class="setup-group">
+                    <label for="musicType">🎵 Background Music Genre:</label>
+                    <select id="musicType" style="max-width: 400px;">
+                        <option value="rock" selected>🎸 Rock (Default)</option>
+                        <option value="jazz">🎷 Jazz</option>
+                        <option value="classical">🎻 Classical</option>
+                        <option value="ambient">🌊 Ambient</option>
+                        <option value="none">🔇 No Music</option>
+                    </select>
+                </div>
+
+                <button class="btn-start" onclick="startQuiz()">▶️ Start Quiz</button>
+            </div>
+
+            <!-- Quiz Screen -->
+            <div id="quizScreen" style="display: none;">
+                <div class="quiz-header">
+                    <div class="progress-info">
+                        Question <span id="currentQuestion">0</span> of <span id="totalQuestions">0</span>
+                    </div>
+                    <div class="score-display">Score: <span id="currentScore">0</span>/<span id="maxScore">0</span></div>
+                </div>
+
+                <div class="question-container">
+                    <div class="question-text" id="questionText"></div>
+                    <div class="answer-options" id="answerOptions"></div>
+                    <div class="feedback" id="feedback"></div>
+                </div>
+
+                <button class="btn-back" id="backBtn" onclick="backQuestion()">← Back</button>
+                <button class="btn-next" id="nextBtn" onclick="nextQuestion()">Next Question →</button>
+            </div>
+
+            <!-- Results Screen -->
+            <div id="resultsScreen" style="display: none;">
+                <div class="results-container">
+                    <h2 style="color: #333; margin-bottom: 20px;">🎉 Quiz Complete!</h2>
+
+                    <div class="score-badge" id="scoreBadge">0</div>
+
+                    <div class="rating-text" id="ratingText">Outstanding!</div>
+                    <div class="rating-description" id="ratingDescription">
+                        You have demonstrated exceptional knowledge of DDS!
+                    </div>
+
+                    <div class="stats">
+                        <div class="stat-row">
+                            <span class="stat-label">Final Score:</span>
+                            <span class="stat-value"><span id="finalScore">0</span>/<span id="finalMax">0</span> (0%)</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Correct Answers:</span>
+                            <span class="stat-value" id="correctCount">0</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Knowledge Rating:</span>
+                            <span class="rating-badge expert" id="knowledgeRating">Expert</span>
+                        </div>
+                    </div>
+
+                    <div class="btn-group">
+                        <button class="btn-retry" onclick="resetQuiz()">🔄 Play Again</button>
+                        <button class="btn-leaderboard" onclick="switchTab('leaderboard')">📊 View Leaderboard</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- LEADERBOARD TAB -->
+        <div id="leaderboard" class="tab-content">
+            <h2 style="color: #333; margin-bottom: 20px;">📊 Leaderboard</h2>
+            <div style="margin-bottom: 20px;">
+                <button class="btn-retry" onclick="exportLeaderboardCSV()">⬇️ Export Leaderboard</button>
+                <button class="btn-leaderboard" onclick="importLeaderboardCSV()">⬆️ Import Leaderboard</button>
+            </div>
+            <div id="leaderboardContent"></div>
+            <button class="btn-clear" onclick="clearLeaderboard()">🗑️ Clear Leaderboard</button>
+        </div>
+
+        <!-- HELP TAB -->
+        <div id="help" class="tab-content">
+            <h2 style="color: #333; margin-bottom: 20px;">ℹ️ About DDS</h2>
+            <div style="line-height: 1.8; color: #555;">
+                <h3 style="color: #667eea; margin-top: 20px;">☁️ Supabase Cloud Leaderboard Setup</h3>
+                <p>
+                    To enable automatic cloud-based leaderboard syncing across all players:
+                </p>
+                <ol style="margin-left: 20px;">
+                    <li>Go to <a href="https://supabase.com" target="_blank">Supabase.com</a> and sign up (free)</li>
+                    <li>Create a new project</li>
+                    <li>In the SQL editor, run this command:
+                        <pre style="background: #f5f5f5; padding: 10px; border-radius: 5px; overflow-x: auto;">
+CREATE TABLE IF NOT EXISTS leaderboard (
+  id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  player_name TEXT NOT NULL,
+  score INT NOT NULL,
+  total INT NOT NULL,
+  percentage INT NOT NULL,
+  rating TEXT NOT NULL,
+  date TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+ALTER TABLE leaderboard ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow anonymous access" ON leaderboard 
+  FOR ALL USING (true) WITH CHECK (true);
+                        </pre>
+                    </li>
+                    <li>Copy your Project URL and Anon Key from Settings</li>
+                    <li>Edit the HTML file and update these values at the top:
+                        <pre style="background: #f5f5f5; padding: 10px; border-radius: 5px;">
+const SUPABASE_URL = 'https://rxliyabhuuhfubfzuuet.supabase.co/rest/v1/';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ4bGl5YWJodXVoZnViZnp1dWV0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNTc0MjksImV4cCI6MjA5NjkzMzQyOX0.BU1hsCYxChfV3Nri_Eu577osB78hTDwhBKExk2jkNGE';
+                        </pre>
+                    </li>
+                    <li>Save and redeploy to Vercel</li>
+                </ol>
+                <p style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin-top: 20px;">
+                    <strong>Status:</strong> Supabase configured: <span id="supabaseStatus" style="color: #667eea; font-weight: bold;">Not Configured</span>
+                </p>
+
+                <h3 style="color: #667eea; margin-top: 20px;">🎵 Background Music</h3>
+                <p>
+                    The game includes relaxing synthetic background music to enhance your quiz experience. 
+                    Click the speaker icon <strong>🔊</strong> in the top right to toggle music on or off. 
+                    Your preference is saved automatically.
+                </p>
+
+                <h3 style="color: #667eea; margin-top: 20px;">📥 Leaderboard Import/Export</h3>
+                <p>
+                    Share scores with other players (CSV backup):
+                </p>
+                <ul style="margin-left: 20px;">
+                    <li><strong>Export:</strong> Click "Download Leaderboard" to save all scores as a CSV file</li>
+                    <li><strong>Import:</strong> Click "Upload Leaderboard" to merge scores from other CSV files</li>
+                    <li>Duplicate scores are automatically detected and skipped</li>
+                    <li>Share CSV files via email or file sharing services</li>
+                </ul>
+
+                <h3 style="color: #667eea; margin-top: 20px;">What is DDS?</h3>
+                <p>
+                    Direct Data Solutions (DDS) is a comprehensive global industry data solution managed by ARC and IATA 
+                    to provide carriers worldwide with access to high-quality market data. DDS includes detailed, 
+                    segment-level itinerary and ticketing information sold through agencies and carrier channels.
+                </p>
+
+                <h3 style="color: #667eea; margin-top: 20px;">Key Features:</h3>
+                <ul style="margin-left: 20px;">
+                    <li><strong>Comprehensive Data:</strong> ASP, BSP, and Carrier-contributed transactions</li>
+                    <li><strong>Cabin Classes:</strong> First Class, Business, Premium Economy, Discount Economy, and Non-Revenue</li>
+                    <li><strong>Product Versions:</strong> Marketplace (global) and Touches (filtered)</li>
+                    <li><strong>Delivery Options:</strong> Daily or Monthly via sFTP or iiNet</li>
+                    <li><strong>Data Quality:</strong> Fixed-row format, 620 characters per transaction</li>
+                </ul>
+
+                <h3 style="color: #667eea; margin-top: 20px;">Data Processing Bases:</h3>
+                <ul style="margin-left: 20px;">
+                    <li><strong>Processing Date:</strong> Transactions processed daily or monthly</li>
+                    <li><strong>Date of Departure:</strong> Settled transactions by calendar month</li>
+                </ul>
+
+                <h3 style="color: #667eea; margin-top: 20px;">How to Play:</h3>
+                <ol style="margin-left: 20px;">
+                    <li>Enter your name (your last name is remembered)</li>
+                    <li>Select the number of questions (5-50)</li>
+                    <li>Choose difficulty level: Easy, Medium, Hard, or Mixed</li>
+                    <li>Click an answer option to select it
+                        <ul style="margin-top: 10px;">
+                            <li>Your answer is submitted immediately</li>
+                            <li>The quiz automatically proceeds to the next question</li>
+                        </ul>
+                    </li>
+                    <li>Use the Back button to review previous questions</li>
+                    <li>Complete all questions and receive your knowledge rating</li>
+                    <li>View your performance on the leaderboard</li>
+                </ol>
+
+                <h3 style="color: #667eea; margin-top: 20px;">Rating System:</h3>
+                <ul style="margin-left: 20px;">
+                    <li><span class="rating-badge expert">Expert</span> - 90-100% correct (Mastered DDS!)</li>
+                    <li><span class="rating-badge advanced">Advanced</span> - 75-89% correct (Strong knowledge)</li>
+                    <li><span class="rating-badge intermediate">Intermediate</span> - 60-74% correct (Good foundation)</li>
+                    <li><span class="rating-badge beginner">Beginner</span> - Below 60% (Keep learning!)</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ========================================
+        // SUPABASE CONFIGURATION
+        // ========================================
+        const SUPABASE_URL = 'https://dvfwhbrigdaabpzfyfbv.supabase.co/rest/v1/';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR2ZndoYnJpZ2RhYWJwemZ5ZmJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzODQyNjcsImV4cCI6MjA5Njk2MDI2N30.fn3XGCMidqFziwCqdtFdV8T8OwJpuaFQtzhcIKDZM-M';
+
+        let supabaseClient = null;
+        let supabaseEnabled = false;
+
+        // Initialize Supabase
+        if (SUPABASE_URL && SUPABASE_ANON_KEY && 
+            SUPABASE_URL !== 'YOUR_SUPABASE_URL_HERE' && 
+            SUPABASE_ANON_KEY !== 'YOUR_SUPABASE_ANON_KEY_HERE') {
+            try {
+                supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                supabaseEnabled = true;
+                console.log('Supabase initialized successfully');
+            } catch (error) {
+                console.log('Supabase initialization error:', error);
+                supabaseEnabled = false;
+            }
+        }
+
+        // ========================================
+        // GAME CONFIGURATION
+        // ========================================
+        let audioContext = null;
+        let isMuted = localStorage.getItem('ddsGameMuted') === 'true';
+        let musicType = localStorage.getItem('ddsMusicType') || 'rock';
+        let musicOscillators = [];
+
+        // Initialize Audio Context
+        function initAudioContext() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        // Music player element
+        let musicPlayer = null;
+        let currentTrackIndex = 0;
+
+        // Royalty-free music URLs (from Pixabay Music and Freepd)
+        const musicTracks = {
+            rock: [
+                'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3', // Fallback
+            ],
+            jazz: [
+                'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
+            ],
+            classical: [
+                'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
+                'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3',
+                'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3',
+                'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3',
+            ],
+            ambient: [
+                'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3',
+                'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3',
+                'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3',
+            ],
+            none: []
+        };
+
+        // Generate Synthetic Background Music Fallback
+        function playBackgroundMusic() {
+            if (isMuted || musicType === 'none') return;
+
+            // Try to play audio file
+            playAudioTrack();
+            
+            // Fallback to synth if needed
+            setTimeout(() => {
+                if (!musicPlayer || !musicPlayer.src) {
+                    initAudioContext();
+                    if (audioContext.state === 'suspended') {
+                        audioContext.resume();
+                    }
+                    switch(musicType) {
+                        case 'rock':
+                            playRockMusicSynth();
+                            break;
+                        case 'jazz':
+                            playJazzMusicSynth();
+                            break;
+                        case 'classical':
+                            playClassicalMusicSynth();
+                            break;
+                        case 'ambient':
+                            playAmbientMusicSynth();
+                            break;
+                    }
+                }
+            }, 500);
+        }
+
+        // Play audio track
+        function playAudioTrack() {
+            if (!musicPlayer) {
+                musicPlayer = new Audio();
+                musicPlayer.volume = 0.3;
+                musicPlayer.addEventListener('ended', () => {
+                    if (!isMuted && musicType !== 'none') {
+                        currentTrackIndex = (currentTrackIndex + 1) % (musicTracks[musicType]?.length || 1);
+                        playAudioTrack();
+                    }
+                });
+            }
+
+            if (musicTracks[musicType] && musicTracks[musicType].length > 0) {
+                const track = musicTracks[musicType][currentTrackIndex % musicTracks[musicType].length];
+                musicPlayer.src = track;
+                musicPlayer.play().catch(err => {
+                    console.log('Audio playback error (will fall back to synth):', err);
+                });
+            }
+        }
+
+        function playRockMusicSynth() {
+            const now = audioContext.currentTime;
+            const notes = [164.81, 196.00, 246.94, 293.66, 329.63, 392.00, 493.88]; // E3-B3
+            const tempo = 0.35;
+
+            const playNote = (freq, startTime, duration, waveType = 'square') => {
+                const osc = audioContext.createOscillator();
+                const gain = audioContext.createGain();
+                const filter = audioContext.createBiquadFilter();
+
+                osc.connect(filter);
+                filter.connect(gain);
+                gain.connect(audioContext.destination);
+
+                osc.type = waveType;
+                osc.frequency.value = freq;
+                filter.type = 'lowpass';
+                filter.frequency.value = 1200;
+
+                gain.gain.setValueAtTime(0, startTime);
+                gain.gain.linearRampToValueAtTime(0.25, startTime + duration * 0.1);
+                gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+
+                osc.start(startTime);
+                osc.stop(startTime + duration);
+            };
+
+            // Better rock melody with groove
+            const melody = [0, 0, 1, 3, 2, 1, 0, 4, 3, 2, 1, 0, 5, 4, 3, 2];
+            for (let i = 0; i < melody.length; i++) {
+                const startTime = now + (i * tempo);
+                playNote(notes[melody[i]], startTime, tempo * 0.75, i % 2 === 0 ? 'square' : 'sawtooth');
+            }
+
+            setTimeout(() => {
+                if (!isMuted && musicType === 'rock') {
+                    playRockMusicSynth();
+                }
+            }, (melody.length * tempo * 1000) + 100);
+        }
+
+        function playJazzMusicSynth() {
+            const now = audioContext.currentTime;
+            const notes = [246.94, 277.18, 329.63, 369.99, 440.00, 493.88, 587.33]; // B2-D4
+            const tempo = 0.6;
+
+            const playNote = (freq, startTime, duration, volume = 0.12) => {
+                const osc = audioContext.createOscillator();
+                const gain = audioContext.createGain();
+
+                osc.connect(gain);
+                gain.connect(audioContext.destination);
+
+                osc.type = 'sine';
+                osc.frequency.value = freq;
+                osc.frequency.setTargetAtTime(freq * 0.99, startTime, 0.08); // Smooth vibrato
+
+                gain.gain.setValueAtTime(0, startTime);
+                gain.gain.linearRampToValueAtTime(volume, startTime + duration * 0.2);
+                gain.gain.linearRampToValueAtTime(volume * 0.5, startTime + duration * 0.8);
+                gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+
+                osc.start(startTime);
+                osc.stop(startTime + duration);
+            };
+
+            // Sophisticated jazz progression
+            const melody = [1, 3, 2, 4, 3, 5, 4, 6, 5, 4, 3, 2, 1, 2, 3, 1];
+            for (let i = 0; i < melody.length; i++) {
+                const startTime = now + (i * tempo);
+                playNote(notes[melody[i]], startTime, tempo * 0.95, 0.15);
+            }
+
+            setTimeout(() => {
+                if (!isMuted && musicType === 'jazz') {
+                    playJazzMusicSynth();
+                }
+            }, (melody.length * tempo * 1000) + 100);
+        }
+
+        function playClassicalMusicSynth() {
+            const now = audioContext.currentTime;
+            const notes = [261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25]; // C4-C5
+            const tempo = 0.4;
+
+            const playNote = (freq, startTime, duration) => {
+                const osc = audioContext.createOscillator();
+                const gain = audioContext.createGain();
+
+                osc.connect(gain);
+                gain.connect(audioContext.destination);
+
+                osc.type = 'sine';
+                osc.frequency.value = freq;
+
+                gain.gain.setValueAtTime(0, startTime);
+                gain.gain.linearRampToValueAtTime(0.12, startTime + duration * 0.15);
+                gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+
+                osc.start(startTime);
+                osc.stop(startTime + duration);
+            };
+
+            // Classical melody with better phrasing
+            const melody = [0, 2, 4, 5, 7, 5, 4, 2, 0, 1, 3, 5, 7, 5, 6, 4];
+            for (let i = 0; i < melody.length; i++) {
+                const startTime = now + (i * tempo);
+                const noteDuration = i === 7 || i === 15 ? tempo * 1.5 : tempo * 0.9; // Add rests
+                playNote(notes[melody[i]], startTime, noteDuration);
+            }
+
+            setTimeout(() => {
+                if (!isMuted && musicType === 'classical') {
+                    playClassicalMusicSynth();
+                }
+            }, (melody.length * tempo * 1000) + 200);
+        }
+
+        function playAmbientMusicSynth() {
+            const now = audioContext.currentTime;
+            const notes = [110, 123.47, 146.83, 164.81, 196.00, 220.00]; // Low ambient pad
+            const tempo = 2.0;
+
+            const playNote = (freq, startTime, duration) => {
+                const osc = audioContext.createOscillator();
+                const gain = audioContext.createGain();
+                const filter = audioContext.createBiquadFilter();
+
+                osc.connect(filter);
+                filter.connect(gain);
+                gain.connect(audioContext.destination);
+
+                osc.type = 'sine';
+                osc.frequency.value = freq;
+                filter.type = 'lowpass';
+                filter.frequency.setTargetAtTime(800, startTime, 0.5);
+
+                gain.gain.setValueAtTime(0, startTime);
+                gain.gain.linearRampToValueAtTime(0.08, startTime + duration * 0.25);
+                gain.gain.linearRampToValueAtTime(0.06, startTime + duration * 0.75);
+                gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+
+                osc.start(startTime);
+                osc.stop(startTime + duration);
+            };
+
+            // Atmospheric pad progression
+            const melody = [0, 1, 2, 3, 4, 5, 4, 3, 2, 1];
+            for (let i = 0; i < melody.length; i++) {
+                const startTime = now + (i * tempo);
+                playNote(notes[melody[i]], startTime, tempo * 0.98);
+            }
+
+            setTimeout(() => {
+                if (!isMuted && musicType === 'ambient') {
+                    playAmbientMusicSynth();
+                }
+            }, (melody.length * tempo * 1000) + 200);
+        }
+
+        // Toggle Mute
+        function toggleMute() {
+            isMuted = !isMuted;
+            localStorage.setItem('ddsGameMuted', isMuted);
+
+            const muteBtn = document.getElementById('muteBtn');
+            muteBtn.textContent = isMuted ? '🔇' : '🔊';
+            muteBtn.classList.toggle('muted', isMuted);
+
+            if (!isMuted && audioContext && musicType !== 'none') {
+                playBackgroundMusic();
+            } else if (isMuted && audioContext) {
+                audioContext.close();
+                audioContext = null;
+            }
+        }
+
+        // Save music type preference
+        document.addEventListener('change', function(e) {
+            if (e.target.id === 'musicType') {
+                musicType = e.target.value;
+                localStorage.setItem('ddsMusicType', musicType);
+                
+                if (musicType === 'none') {
+                    // Stop music
+                    if (audioContext) {
+                        audioContext.close();
+                        audioContext = null;
+                    }
+                } else if (!isMuted) {
+                    // Start new music type
+                    if (!audioContext) {
+                        initAudioContext();
+                    }
+                    playBackgroundMusic();
+                }
+            }
+        });
+
+        // Update mute button on load
+        window.addEventListener('load', function() {
+            // Load saved player name
+            const savedName = localStorage.getItem('ddsLastPlayerName');
+            if (savedName) {
+                document.getElementById('playerName').value = savedName;
+            }
+
+            // Load saved music type
+            const savedMusicType = localStorage.getItem('ddsMusicType') || 'rock';
+            const musicTypeSelect = document.getElementById('musicType');
+            if (musicTypeSelect) {
+                musicTypeSelect.value = savedMusicType;
+                musicType = savedMusicType;
+            }
+
+            // Show Supabase status
+            const statusEl = document.getElementById('supabaseStatus');
+            if (supabaseEnabled) {
+                statusEl.textContent = '✅ Cloud Sync Enabled';
+                statusEl.style.color = '#4caf50';
+            } else {
+                statusEl.textContent = '⚠️ Using Local Storage';
+                statusEl.style.color = '#ff9800';
+            }
+
+            const muteBtn = document.getElementById('muteBtn');
+            muteBtn.textContent = isMuted ? '🔇' : '🔊';
+            muteBtn.classList.toggle('muted', isMuted);
+
+            // Start music automatically on first user interaction
+            if (!isMuted && musicType !== 'none') {
+                const startMusicOnInteraction = () => {
+                    initAudioContext();
+                    playBackgroundMusic();
+                    document.removeEventListener('click', startMusicOnInteraction);
+                };
+                document.addEventListener('click', startMusicOnInteraction);
+            }
+        });
+
+        let gameState = {
+            playerName: '',
+            totalQuestions: 10,
+            difficulty: 'easy',
+            currentQuestion: 0,
+            score: 0,
+            answers: [],
+            quizData: []
+        };
+
+        // DDS Quiz Questions Database
+        const questionBank = {
+            easy: [
+                {
+                    question: "What does DDS stand for?",
+                    options: [
+                        "Direct Data Solutions",
+                        "Daily Data Services",
+                        "Digital Distribution System",
+                        "Data Design Standards"
+                    ],
+                    correct: 0,
+                    explanation: "DDS is Direct Data Solutions, a global industry data service managed by ARC and IATA."
+                },
+                {
+                    question: "Which organizations manage DDS?",
+                    options: [
+                        "ARC and IATA",
+                        "IATA and ICAO",
+                        "ARC and FAA",
+                        "IATA and IACO"
+                    ],
+                    correct: 0,
+                    explanation: "ARC manages DDS for U.S.-based carriers, while IATA manages it for airlines outside the U.S."
+                },
+                {
+                    question: "What is the primary purpose of DDS?",
+                    options: [
+                        "To provide comprehensive market data to carriers",
+                        "To regulate airline pricing",
+                        "To manage flight operations",
+                        "To handle customer service"
+                    ],
+                    correct: 0,
+                    explanation: "DDS is designed to provide carriers with comprehensive, high-quality market data for analysis."
+                },
+                {
+                    question: "How many cabin classes are defined in DDS?",
+                    options: [
+                        "5",
+                        "3",
+                        "4",
+                        "6"
+                    ],
+                    correct: 0,
+                    explanation: "DDS defines 5 cabin classes: First Class, Business Class, Premium Economy, Discount Economy, and Non-Revenue."
+                },
+                {
+                    question: "Which of these is NOT a DDS cabin class?",
+                    options: [
+                        "Standard Class",
+                        "Business Class",
+                        "First Class",
+                        "Premium Economy"
+                    ],
+                    correct: 0,
+                    explanation: "The five DDS cabin classes are First, Business, Premium Economy, Discount Economy, and Non-Revenue."
+                },
+                {
+                    question: "What data types are included in the DDS Feed?",
+                    options: [
+                        "ASP, BSP, and Carrier-contributed transactions",
+                        "Only ASP transactions",
+                        "Only airline direct sales",
+                        "Only refunds and exchanges"
+                    ],
+                    correct: 0,
+                    explanation: "DDS Feed includes ASP, BSP, and Carrier-contributed indirect and direct sales transactions."
+                },
+                {
+                    question: "What format is the DDS Feed data file available in?",
+                    options: [
+                        "Fixed-row length text file (.txt)",
+                        "CSV format",
+                        "JSON format",
+                        "XML format"
+                    ],
+                    correct: 0,
+                    explanation: "The Feed is available as a fixed-row length, flat file text format with 620 characters per transaction row."
+                },
+                {
+                    question: "How many characters long is each transaction row in the DDS Feed?",
+                    options: [
+                        "620",
+                        "512",
+                        "1024",
+                        "256"
+                    ],
+                    correct: 0,
+                    explanation: "Each transaction row in the DDS Feed is 620 characters in length including the filler field."
+                },
+                {
+                    question: "Which data documents are included in DDS?",
+                    options: [
+                        "Only documents with valid itineraries",
+                        "All documents including PTA and MCO",
+                        "Only direct sales",
+                        "Only refunds"
+                    ],
+                    correct: 0,
+                    explanation: "Only documents with itineraries are included. Prepaid Ticket Advice (PTA) and Miscellaneous Charge Orders (MCO) are not included."
+                },
+                {
+                    question: "What does 'Touches' mean in DDS product versions?",
+                    options: [
+                        "Filtered transactions that include a specific airport anywhere in the itinerary",
+                        "Transactions that are touched by the carrier",
+                        "Direct flight transactions only",
+                        "Connections between carriers"
+                    ],
+                    correct: 0,
+                    explanation: "Touches version includes transactions where a filter criterion (like an airport) appears anywhere in the itinerary."
+                }
+            ],
+            medium: [
+                {
+                    question: "What is the key difference between Processing Date and Date of Departure in DDS?",
+                    options: [
+                        "Processing Date is when processed, Date of Departure is when ticket flight departs",
+                        "They are the same thing",
+                        "Processing Date is always monthly",
+                        "Date of Departure is only for domestic flights"
+                    ],
+                    correct: 0,
+                    explanation: "Processing Date contains transactions processed daily/monthly, while Date of Departure contains settled transactions with departure in a calendar month."
+                },
+                {
+                    question: "What are the two main product versions of DDS Feed?",
+                    options: [
+                        "Marketplace and Touches",
+                        "Global and Regional",
+                        "Premium and Standard",
+                        "Daily and Monthly"
+                    ],
+                    correct: 0,
+                    explanation: "The two versions are Marketplace (global data) and Touches (filtered data based on specific criteria)."
+                },
+                {
+                    question: "Which delivery method options are available for DDS Feed?",
+                    options: [
+                        "sFTP and iiNet",
+                        "Email and FTP",
+                        "HTTP and SFTP",
+                        "API and WebService"
+                    ],
+                    correct: 0,
+                    explanation: "DDS Feed is delivered via secure electronic file transmission protocol (sFTP) or iiNet."
+                },
+                {
+                    question: "What does RBKD stand for in the context of cabin class mapping?",
+                    options: [
+                        "Revenue Booking Designator",
+                        "Reservation Booking Code",
+                        "Revenue Booking Code",
+                        "Reported Booking Designation"
+                    ],
+                    correct: 0,
+                    explanation: "RBKD is the single letter Revenue Booking Designator submitted for a ticket segment."
+                },
+                {
+                    question: "What determines cabin class allocation in DDS?",
+                    options: [
+                        "The single letter Revenue Booking Designator (RBKD) mapped by each carrier",
+                        "The ticket price only",
+                        "The flight distance",
+                        "The airline's choice"
+                    ],
+                    correct: 0,
+                    explanation: "Cabin class allocation is based on the RBKD submitted for the ticket segment, which each carrier maps to cabin classes."
+                },
+                {
+                    question: "Which of these is excluded from the DDS Feed?",
+                    options: [
+                        "BSP Amadeus transactions unless contributed",
+                        "All ASP transactions",
+                        "Carrier direct sales",
+                        "Refund transactions"
+                    ],
+                    correct: 0,
+                    explanation: "BSP Amadeus transactions are excluded from the Feed unless contributed by a carrier."
+                },
+                {
+                    question: "What is the timeline for Daily Delivery of DDS Feed?",
+                    options: [
+                        "No later than 1 day after data is available",
+                        "Within 2 hours",
+                        "Same day only",
+                        "Within 3 days"
+                    ],
+                    correct: 0,
+                    explanation: "Daily Delivery files are distributed no later than 1 day after the data is available."
+                },
+                {
+                    question: "When is Monthly Delivery of DDS Feed available?",
+                    options: [
+                        "Wednesday after product creation for Processing Date; 10th of following month for Date of Departure",
+                        "First day of each month",
+                        "Last day of each month",
+                        "Middle of each month"
+                    ],
+                    correct: 0,
+                    explanation: "Monthly files for Processing Date are delivered by Wednesday after creation; for Date of Departure on the 10th of the following month."
+                },
+                {
+                    question: "What type of data masking occurs for European agencies?",
+                    options: [
+                        "Agency Name and Code are masked unless agency opts-in",
+                        "Only transaction amounts are masked",
+                        "All passenger information is masked",
+                        "No masking occurs"
+                    ],
+                    correct: 0,
+                    explanation: "European agency name and code are masked as 'Undisclosed Agency' and '00000000' unless the agency has opted-in."
+                },
+                {
+                    question: "What percentage of full Y fare defines Premium/Full Economy cabin class?",
+                    options: [
+                        "Within 20% of full Y fare",
+                        "Exactly at Y fare",
+                        "50% of Y fare",
+                        "80% of Y fare"
+                    ],
+                    correct: 0,
+                    explanation: "Premium/Full Economy includes fares within 20% of full Y fare value."
+                }
+            ],
+            hard: [
+                {
+                    question: "What is the range for Discount Economy cabin class fare levels?",
+                    options: [
+                        "Between 80% and 10% of full Y fare",
+                        "Below 10% of Y fare only",
+                        "Between 50% and 20% of Y fare",
+                        "Below 20% of Y fare"
+                    ],
+                    correct: 0,
+                    explanation: "Discount Economy is defined as economy travel at fares between 80% and 10% of full Y fare."
+                },
+                {
+                    question: "What is the minimum frequency requirement for DDS Feed availability?",
+                    options: [
+                        "Daily for Processing Date; Monthly for Date of Departure",
+                        "Only monthly",
+                        "Weekly only",
+                        "Real-time streaming"
+                    ],
+                    correct: 0,
+                    explanation: "Daily delivery is available for data based on Processing Date only; Monthly for both Processing Date and Date of Departure."
+                },
+                {
+                    question: "How are historical files typically organized in DDS initial delivery?",
+                    options: [
+                        "Weekly increments with all available data",
+                        "Daily increments only",
+                        "Monthly increments",
+                        "Annual snapshots"
+                    ],
+                    correct: 0,
+                    explanation: "Initial historical files are delivered in weekly increments with all applicable available data."
+                },
+                {
+                    question: "What is the file naming convention for DDS weekly files?",
+                    options: [
+                        "Subscriber ID + '_weekly_' + week-ending-date + '.txt.zip'",
+                        "Date + 'weekly' + subscriber ID",
+                        "'weekly' + date + subscriber ID",
+                        "subscriber ID + date only"
+                    ],
+                    correct: 0,
+                    explanation: "Naming format is: 12/13-byte Subscriber ID_frequency_date.txt.zip (e.g., 2017122712362_weekly_2017-04-21.txt.zip)"
+                },
+                {
+                    question: "What functional areas benefit from DDS data analysis?",
+                    options: [
+                        "Sales, distribution, network planning, pricing, revenue management, and alliance management",
+                        "Only revenue management",
+                        "Only sales",
+                        "Only pricing"
+                    ],
+                    correct: 0,
+                    explanation: "DDS improves critical analytical processes across sales, distribution, network planning, pricing, revenue management, and alliance management."
+                },
+                {
+                    question: "What is the purpose of the Touches filter in DDS Feed?",
+                    options: [
+                        "To include transactions that touch (pass through) a specific criterion anywhere in the itinerary",
+                        "To exclude certain airports",
+                        "To filter only direct flights",
+                        "To remove connecting flights"
+                    ],
+                    correct: 0,
+                    explanation: "Touches version filters transactions to include those meeting filter criteria (like an airport) anywhere in the itinerary."
+                },
+                {
+                    question: "Which statement about European agency masking is correct?",
+                    options: [
+                        "Tickets plated by the requesting carrier are not subject to EU masking",
+                        "All European transactions are masked",
+                        "Masking applies only to one field",
+                        "European agencies cannot be identified"
+                    ],
+                    correct: 0,
+                    explanation: "Tickets plated (issued) by the requesting carrier are exempt from EU masking requirements."
+                },
+                {
+                    question: "What is the significance of 'Contributed Data' in DDS?",
+                    options: [
+                        "Airlines can choose to submit their own indirect and direct data for inclusion",
+                        "All data is automatically contributed",
+                        "Only BSP data is contributed",
+                        "Contribution is mandatory"
+                    ],
+                    correct: 0,
+                    explanation: "Carriers can choose to contribute their indirect and/or direct ticketing data when they elect to release it to DDS subscribers."
+                },
+                {
+                    question: "How does the Marketplace version of DDS differ from Touches?",
+                    options: [
+                        "Marketplace includes all ASP/BSP transactions; Touches requires filter selection",
+                        "They are identical",
+                        "Marketplace is smaller",
+                        "Touches is available globally"
+                    ],
+                    correct: 0,
+                    explanation: "Marketplace includes all global ASP/BSP and contributed transactions; Touches requires selecting at least one filter and includes only matching transactions."
+                },
+                {
+                    question: "What does the DDS Global Database primarily support?",
+                    options: [
+                        "Comprehensive market analysis and industry-wide data visibility",
+                        "Individual airline operations only",
+                        "Government regulatory compliance",
+                        "Passenger booking"
+                    ],
+                    correct: 0,
+                    explanation: "The DDS Global Database supports comprehensive market data analysis for carriers, enabling better decision-making across key business functions."
+                }
+            ]
+        };
+
+        // UI Helper Functions
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+
+            if (tabName === 'leaderboard') {
+                displayLeaderboard();
+            }
+        }
+
+        function selectDifficulty(element, level) {
+            document.querySelectorAll('.difficulty-option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            element.classList.add('selected');
+            gameState.difficulty = level;
+        }
+
+        document.getElementById('questionCount').addEventListener('input', function() {
+            document.getElementById('questionCountDisplay').textContent = this.value;
+            gameState.totalQuestions = parseInt(this.value);
+        });
+
+        // Quiz Logic
+        function startQuiz() {
+            const playerName = document.getElementById('playerName').value.trim();
+            const nameError = document.getElementById('nameError');
+
+            if (!playerName) {
+                nameError.style.display = 'block';
+                return;
+            }
+
+            nameError.style.display = 'none';
+            
+            // Save player name to localStorage
+            localStorage.setItem('ddsLastPlayerName', playerName);
+            
+            gameState.playerName = playerName;
+            gameState.totalQuestions = parseInt(document.getElementById('questionCount').value);
+            gameState.currentQuestion = 0;
+            gameState.score = 0;
+            gameState.answers = [];
+
+            // Build quiz data
+            buildQuizData();
+
+            // Show quiz screen
+            document.getElementById('setupScreen').style.display = 'none';
+            document.getElementById('resultsScreen').style.display = 'none';
+            document.getElementById('quizScreen').style.display = 'block';
+
+            // Update headers
+            document.getElementById('totalQuestions').textContent = gameState.totalQuestions;
+            document.getElementById('maxScore').textContent = gameState.totalQuestions;
+
+            loadQuestion();
+        }
+
+        function buildQuizData() {
+            gameState.quizData = [];
+            let pool = [];
+
+            // Session-based question tracking (2-hour window)
+            const now = Date.now();
+            let sessionData = JSON.parse(sessionStorage.getItem('ddsQuizSession')) || {
+                startTime: now,
+                askedQuestions: []
+            };
+
+            // Reset if 2 hours have passed
+            if (now - sessionData.startTime > 2 * 60 * 60 * 1000) {
+                sessionData = {
+                    startTime: now,
+                    askedQuestions: []
+                };
+            }
+
+            if (gameState.difficulty === 'mixed') {
+                // Mix all difficulties
+                const easy = questionBank.easy.sort(() => Math.random() - 0.5);
+                const medium = questionBank.medium.sort(() => Math.random() - 0.5);
+                const hard = questionBank.hard.sort(() => Math.random() - 0.5);
+
+                const questionsPerDifficulty = Math.floor(gameState.totalQuestions / 3);
+                pool = [
+                    ...easy.slice(0, questionsPerDifficulty),
+                    ...medium.slice(0, questionsPerDifficulty),
+                    ...hard.slice(0, gameState.totalQuestions - 2 * questionsPerDifficulty)
+                ];
+            } else {
+                pool = questionBank[gameState.difficulty].sort(() => Math.random() - 0.5);
+            }
+
+            // Filter out recently asked questions
+            pool = pool.filter((q, idx) => !sessionData.askedQuestions.includes(q.question));
+
+            // If not enough questions, reset the session tracker
+            if (pool.length < gameState.totalQuestions) {
+                sessionData.askedQuestions = [];
+                if (gameState.difficulty === 'mixed') {
+                    const easy = questionBank.easy.sort(() => Math.random() - 0.5);
+                    const medium = questionBank.medium.sort(() => Math.random() - 0.5);
+                    const hard = questionBank.hard.sort(() => Math.random() - 0.5);
+                    const questionsPerDifficulty = Math.floor(gameState.totalQuestions / 3);
+                    pool = [
+                        ...easy.slice(0, questionsPerDifficulty),
+                        ...medium.slice(0, questionsPerDifficulty),
+                        ...hard.slice(0, gameState.totalQuestions - 2 * questionsPerDifficulty)
+                    ];
+                } else {
+                    pool = questionBank[gameState.difficulty].sort(() => Math.random() - 0.5);
+                }
+            }
+
+            gameState.quizData = pool.slice(0, gameState.totalQuestions);
+
+            // Track asked questions
+            gameState.quizData.forEach(q => {
+                if (!sessionData.askedQuestions.includes(q.question)) {
+                    sessionData.askedQuestions.push(q.question);
+                }
+            });
+
+            sessionStorage.setItem('ddsQuizSession', JSON.stringify(sessionData));
+        }
+
+        function loadQuestion() {
+            if (gameState.currentQuestion >= gameState.totalQuestions) {
+                endQuiz();
+                return;
+            }
+
+            const question = gameState.quizData[gameState.currentQuestion];
+            document.getElementById('currentQuestion').textContent = gameState.currentQuestion + 1;
+            document.getElementById('questionText').textContent = question.question;
+
+            // Randomize answer options
+            const optionsWithIndices = question.options.map((opt, idx) => ({
+                text: opt,
+                originalIndex: idx
+            }));
+            
+            // Shuffle options
+            for (let i = optionsWithIndices.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [optionsWithIndices[i], optionsWithIndices[j]] = [optionsWithIndices[j], optionsWithIndices[i]];
+            }
+            
+            // Store the shuffled correct answer index for this question
+            const correctIndex = optionsWithIndices.findIndex(opt => opt.originalIndex === question.correct);
+            question.shuffledCorrect = correctIndex;
+
+            const optionsDiv = document.getElementById('answerOptions');
+            optionsDiv.innerHTML = '';
+
+            optionsWithIndices.forEach((option, index) => {
+                const btn = document.createElement('div');
+                btn.className = 'answer-option';
+                btn.textContent = option.text;
+                btn.onclick = () => selectAnswer(index);
+                optionsDiv.appendChild(btn);
+            });
+
+            // Show/hide back button based on question number
+            const backBtn = document.getElementById('backBtn');
+            if (gameState.currentQuestion > 0) {
+                backBtn.classList.add('show');
+            } else {
+                backBtn.classList.remove('show');
+            }
+
+            document.getElementById('feedback').classList.remove('show', 'correct', 'incorrect');
+            document.getElementById('nextBtn').classList.remove('show');
+        }
+
+        function selectAnswer(selectedIndex) {
+            const question = gameState.quizData[gameState.currentQuestion];
+            const isCorrect = selectedIndex === question.shuffledCorrect;
+
+            // Record answer
+            gameState.answers.push({
+                question: question.question,
+                selected: selectedIndex,
+                correct: question.correct,
+                isCorrect: isCorrect
+            });
+
+            // Update score
+            if (isCorrect) {
+                gameState.score++;
+            }
+
+            // Update UI
+            const options = document.querySelectorAll('.answer-option');
+            options.forEach((opt, idx) => {
+                opt.classList.add('disabled');
+                if (idx === selectedIndex) {
+                    opt.classList.add('selected');
+                }
+            });
+
+            // Update score display
+            document.getElementById('currentScore').textContent = gameState.score;
+
+            // Auto-advance to next question after 500ms
+            setTimeout(() => {
+                gameState.currentQuestion++;
+                loadQuestion();
+            }, 500);
+        }
+
+        function nextQuestion() {
+            gameState.currentQuestion++;
+            loadQuestion();
+        }
+
+        function backQuestion() {
+            if (gameState.currentQuestion > 0) {
+                // Remove the last answer from the record
+                const lastAnswer = gameState.answers.pop();
+                
+                // Adjust score if the last answer was correct
+                if (lastAnswer && lastAnswer.isCorrect) {
+                    gameState.score--;
+                }
+
+                // Go back one question
+                gameState.currentQuestion--;
+                document.getElementById('currentScore').textContent = gameState.score;
+                loadQuestion();
+            }
+        }
+
+        function endQuiz() {
+            const percentage = (gameState.score / gameState.totalQuestions) * 100;
+            let rating, ratingText, ratingDescription, badgeClass;
+
+            if (percentage >= 90) {
+                rating = 'Expert';
+                ratingText = '🌟 Outstanding!';
+                ratingDescription = 'You have demonstrated exceptional knowledge of DDS! You are an expert in the product.';
+                badgeClass = 'expert';
+            } else if (percentage >= 75) {
+                rating = 'Advanced';
+                ratingText = '👍 Excellent Work!';
+                ratingDescription = 'You have strong knowledge of DDS. Continue your learning to master all aspects.';
+                badgeClass = 'advanced';
+            } else if (percentage >= 60) {
+                rating = 'Intermediate';
+                ratingText = '📚 Good Foundation!';
+                ratingDescription = 'You have a solid understanding of DDS basics. Practice more to advance your expertise.';
+                badgeClass = 'intermediate';
+            } else {
+                rating = 'Beginner';
+                ratingText = '🚀 Keep Learning!';
+                ratingDescription = 'You\'re starting your DDS journey. Review the documentation and try again to improve!';
+                badgeClass = 'beginner';
+            }
+
+            // Update results
+            document.getElementById('scoreBadge').textContent = Math.round(percentage) + '%';
+            document.getElementById('scoreBadge').className = 'score-badge ' + badgeClass;
+            document.getElementById('ratingText').textContent = ratingText;
+            document.getElementById('ratingDescription').textContent = ratingDescription;
+            document.getElementById('finalScore').textContent = gameState.score;
+            document.getElementById('finalMax').textContent = gameState.totalQuestions;
+            document.getElementById('correctCount').textContent = gameState.score;
+            
+            const ratingBadge = document.getElementById('knowledgeRating');
+            ratingBadge.textContent = rating;
+            ratingBadge.className = 'rating-badge ' + badgeClass;
+
+            // Update final max score display
+            document.querySelectorAll('#finalMax').forEach(el => {
+                el.textContent = gameState.totalQuestions;
+            });
+
+            // Save to leaderboard
+            saveToLeaderboard(gameState.playerName, gameState.score, gameState.totalQuestions, rating);
+
+            // Show results
+            document.getElementById('quizScreen').style.display = 'none';
+            document.getElementById('resultsScreen').style.display = 'block';
+        }
+
+        // Leaderboard Functions
+        async function saveToLeaderboard(name, score, total, rating) {
+            const percentage = (score / total) * 100;
+            const entry = {
+                player_name: name,
+                score: score,
+                total: total,
+                percentage: Math.round(percentage),
+                rating: rating,
+                date: new Date().toLocaleString()
+            };
+
+            if (supabaseEnabled && supabaseClient) {
+                try {
+                    // Save to Supabase
+                    const { data, error } = await supabaseClient
+                        .from('leaderboard')
+                        .insert([entry]);
+
+                    if (error) {
+                        console.log('Supabase save error:', error);
+                        saveToLocalStorage(entry);
+                    } else {
+                        console.log('Score saved to Supabase');
+                    }
+                } catch (error) {
+                    console.log('Supabase error:', error);
+                    saveToLocalStorage(entry);
+                }
+            } else {
+                // Fallback to localStorage
+                saveToLocalStorage(entry);
+            }
+        }
+
+        function saveToLocalStorage(entry) {
+            let leaderboard = JSON.parse(localStorage.getItem('ddsLeaderboard')) || [];
+            leaderboard.push(entry);
+            leaderboard.sort((a, b) => b.percentage - a.percentage);
+            leaderboard = leaderboard.slice(0, 100);
+            localStorage.setItem('ddsLeaderboard', JSON.stringify(leaderboard));
+        }
+
+        async function displayLeaderboard() {
+            const container = document.getElementById('leaderboardContent');
+
+            if (supabaseEnabled && supabaseClient) {
+                try {
+                    // Load from Supabase
+                    const { data, error } = await supabaseClient
+                        .from('leaderboard')
+                        .select('*')
+                        .order('percentage', { ascending: false })
+                        .limit(100);
+
+                    if (error) {
+                        console.log('Supabase load error:', error);
+                        loadLocalLeaderboard(container);
+                    } else if (data && data.length > 0) {
+                        renderLeaderboard(data, container);
+                    } else {
+                        loadLocalLeaderboard(container);
+                    }
+                } catch (error) {
+                    console.log('Supabase error:', error);
+                    loadLocalLeaderboard(container);
+                }
+            } else {
+                loadLocalLeaderboard(container);
+            }
+        }
+
+        function loadLocalLeaderboard(container) {
+            const leaderboard = JSON.parse(localStorage.getItem('ddsLeaderboard')) || [];
+            renderLeaderboard(leaderboard, container);
+        }
+
+        function renderLeaderboard(leaderboard, container) {
+            if (leaderboard.length === 0) {
+                container.innerHTML = '<div class="empty-leaderboard">No scores yet. Play the quiz to join the leaderboard!</div>';
+                return;
+            }
+
+            let html = `
+                <table class="leaderboard-table">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Player</th>
+                            <th>Score</th>
+                            <th>Percentage</th>
+                            <th>Rating</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            leaderboard.forEach((entry, index) => {
+                let medal = '';
+                let rankClass = '';
+
+                if (index === 0) {
+                    medal = '🥇';
+                    rankClass = 'gold';
+                } else if (index === 1) {
+                    medal = '🥈';
+                    rankClass = 'silver';
+                } else if (index === 2) {
+                    medal = '🥉';
+                    rankClass = 'bronze';
+                } else {
+                    medal = '•';
+                }
+
+                const playerName = entry.player_name || entry.name;
+                const ratingBadgeClass = entry.rating.toLowerCase();
+                const dateStr = typeof entry.date === 'string' ? entry.date : new Date(entry.date).toLocaleString();
+                const shortDate = dateStr.split(',')[0];
+
+                html += `
+                    <tr>
+                        <td><span class="rank ${rankClass}">${medal} #${index + 1}</span></td>
+                        <td>${playerName}</td>
+                        <td>${entry.score}/${entry.total}</td>
+                        <td>${entry.percentage}%</td>
+                        <td><span class="rating-badge ${ratingBadgeClass}">${entry.rating}</span></td>
+                        <td>${shortDate}</td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                    </tbody>
+                </table>
+            `;
+
+            container.innerHTML = html;
+        }
+
+        // Export Leaderboard to CSV
+        function exportLeaderboardCSV() {
+            const leaderboard = JSON.parse(localStorage.getItem('ddsLeaderboard')) || [];
+
+            if (leaderboard.length === 0) {
+                alert('No leaderboard data to export!');
+                return;
+            }
+
+            // Create CSV header
+            let csv = 'Rank,Player,Score,Total,Percentage,Rating,Date\n';
+
+            // Add data rows
+            leaderboard.forEach((entry, index) => {
+                csv += `"${index + 1}","${entry.name}","${entry.score}","${entry.total}","${entry.percentage}%","${entry.rating}","${entry.date}"\n`;
+            });
+
+            // Create blob and download
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `DDS_Leaderboard_${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        }
+
+        // Import Leaderboard from CSV
+        function importLeaderboardCSV() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.csv';
+
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+
+                reader.onload = function(event) {
+                    try {
+                        const csv = event.target.result;
+                        const lines = csv.split('\n');
+
+                        if (lines.length < 2) {
+                            alert('Invalid CSV file!');
+                            return;
+                        }
+
+                        let importedCount = 0;
+                        let existingLeaderboard = JSON.parse(localStorage.getItem('ddsLeaderboard')) || [];
+
+                        // Skip header row
+                        for (let i = 1; i < lines.length; i++) {
+                            const line = lines[i].trim();
+                            if (!line) continue;
+
+                            // Parse CSV line (handle quoted fields)
+                            const fields = [];
+                            let current = '';
+                            let inQuotes = false;
+
+                            for (let j = 0; j < line.length; j++) {
+                                const char = line[j];
+                                if (char === '"') {
+                                    inQuotes = !inQuotes;
+                                } else if (char === ',' && !inQuotes) {
+                                    fields.push(current.replace(/^"|"$/g, ''));
+                                    current = '';
+                                } else {
+                                    current += char;
+                                }
+                            }
+                            fields.push(current.replace(/^"|"$/g, ''));
+
+                            if (fields.length >= 6) {
+                                const entry = {
+                                    name: fields[1],
+                                    score: parseInt(fields[2]),
+                                    total: parseInt(fields[3]),
+                                    percentage: parseInt(fields[4]),
+                                    rating: fields[5],
+                                    date: fields[6] || new Date().toLocaleString()
+                                };
+
+                                // Check for duplicates
+                                const isDuplicate = existingLeaderboard.some(e => 
+                                    e.name === entry.name && 
+                                    e.date === entry.date
+                                );
+
+                                if (!isDuplicate) {
+                                    existingLeaderboard.push(entry);
+                                    importedCount++;
+                                }
+                            }
+                        }
+
+                        if (importedCount === 0) {
+                            alert('No new scores to import (all were duplicates)');
+                        } else {
+                            // Sort and keep top 100
+                            existingLeaderboard.sort((a, b) => b.percentage - a.percentage);
+                            existingLeaderboard = existingLeaderboard.slice(0, 100);
+
+                            localStorage.setItem('ddsLeaderboard', JSON.stringify(existingLeaderboard));
+                            alert(`Successfully imported ${importedCount} new score(s)!`);
+                            displayLeaderboard();
+                        }
+                    } catch (error) {
+                        alert('Error importing CSV: ' + error.message);
+                    }
+                };
+
+                reader.readAsText(file);
+            };
+
+            input.click();
+        }
+
+        function clearLeaderboard() {
+            if (confirm('Are you sure you want to clear the entire leaderboard? This cannot be undone.')) {
+                if (supabaseEnabled && supabaseClient) {
+                    supabaseClient
+                        .from('leaderboard')
+                        .delete()
+                        .gte('id', 0)
+                        .then(() => {
+                            displayLeaderboard();
+                        })
+                        .catch((error) => {
+                            console.log('Supabase clear error:', error);
+                            localStorage.removeItem('ddsLeaderboard');
+                            displayLeaderboard();
+                        });
+                } else {
+                    localStorage.removeItem('ddsLeaderboard');
+                    displayLeaderboard();
+                }
+            }
+        }
+
+        function resetQuiz() {
+            document.getElementById('setupScreen').style.display = 'block';
+            document.getElementById('quizScreen').style.display = 'none';
+            document.getElementById('resultsScreen').style.display = 'none';
+            // Player name is retained from localStorage
+            document.getElementById('questionCount').value = 10;
+            document.getElementById('questionCountDisplay').textContent = '10';
+            document.querySelectorAll('.difficulty-option').forEach(opt => opt.classList.remove('selected'));
+            document.querySelector('.difficulty-option').classList.add('selected');
+            gameState.difficulty = 'easy';
+        }
+
+    </script>
+</body>
+</html>
